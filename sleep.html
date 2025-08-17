@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>수면 시간 계산기 – Sleep Cycles</title>
+  <style>
+    :root{
+      --bg:#0f172a;
+      --panel:#111827cc;
+      --muted:#94a3b8;
+      --text:#e5e7eb;
+      --accent:#1d4ed8;
+      --accent-2:#3b82f6; 
+      --ok:#34d399;
+      --warn:#f59e0b;
+      --danger:#f87171;
+      --card:#0b1224;
+      --ring: 0 0 0 3px #3b82f655;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial;
+      color:var(--text); background:radial-gradient(1200px 1200px at 90% -10%, #1f2a44, transparent 60%),
+                         radial-gradient(900px 900px at -20% 10%, #281f44, transparent 60%), var(--bg);
+      display:flex; align-items:stretch; justify-content:center; padding:24px;
+    }
+    .app{width:100%; max-width:980px; margin:auto;}
+    header{
+      display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-bottom:20px;
+    }
+    .title{font-size:clamp(20px, 3vw, 32px); font-weight:800; letter-spacing:.2px}
+    .subtitle{color:var(--muted); font-size:14px}
+    .panel{background:linear-gradient(180deg, #0b1224 0%, #0b1224d0 70%, #0b1224aa 100%); border:1px solid #1f2937; border-radius:var(--radius); box-shadow:var(--shadow)}
+    .grid{display:grid; grid-template-columns:1fr; gap:16px}
+    @media(min-width:860px){.grid{grid-template-columns: 1.1fr .9fr}}
+    .card{padding:18px 18px}
+    .card h2{margin:0 0 10px 0; font-size:18px}
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    .field{display:flex; flex-direction:column; gap:8px}
+    label{font-size:13px; color:var(--muted)}
+    input[type="time"], input[type="number"], select{appearance:none; -webkit-appearance:none;}
+    input[type="time"], input[type="number"], select{
+      background:#0f172a; border:1px solid #263045; color:var(--text); padding:12px 14px; border-radius:12px; outline:none; font-size:16px; box-shadow: inset 0 0 0 1px #00000033;
+    }
+    input:focus, select:focus{box-shadow:var(--ring); border-color:#334155}
+    .hint{font-size:12px; color:var(--muted)}
+    .actions{display:flex; gap:10px; flex-wrap:wrap}
+    button{
+      background:linear-gradient(to bottom right, var(--accent), var(--accent-2)); color:#0a0a0a; border:none; padding:12px 14px; border-radius:14px; font-weight:700; cursor:pointer;
+      transition:transform .05s ease, filter .2s ease; box-shadow: 0 8px 20px #00000055;
+    }
+    button:hover{filter:brightness(1.05)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:#0f172a; color:var(--text); border:1px solid #243047}
+    .result{padding:16px; border-top:1px dashed #243047; margin-top:12px}
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid #22304a; border-radius:999px; background:#0d162c; font-size:14px}
+    .list{display:grid; grid-template-columns:1fr; gap:12px; margin-top:12px}
+    @media(min-width:600px){.list{grid-template-columns: repeat(3, 1fr)}}
+    .timecard{padding:14px; border-radius:14px; border:1px solid #1f2b46; background:linear-gradient(180deg, #0f1a33, #0d162c); display:flex; flex-direction:column; gap:6px; position:relative}
+    .time{font-size:26px; font-weight:800}
+    .meta{font-size:12px; color:var(--muted)}
+    .badge{font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #2b3b63; color:#cbd5e1; align-self:flex-start}
+    .copy{position:absolute; right:10px; top:10px; background:#0f172a; color:var(--text); border:1px solid #2b3b63; padding:6px 8px; border-radius:10px; font-size:12px}
+    .footer{margin-top:16px; color:var(--muted); font-size:12px}
+    .tip{margin-top:12px; font-size:13px; color:#cbd5e1}
+    .toggle{display:flex; align-items:center; gap:10px}
+    .toggle input{width:42px; height:24px; appearance:none; background:#263045; border-radius:999px; position:relative; outline:none; cursor:pointer; transition:background .2s ease}
+    .toggle input:checked{background:linear-gradient(90deg, var(--accent), var(--accent-2))}
+    .toggle input::after{content:""; position:absolute; width:18px; height:18px; border-radius:50%; background:#0b1224; top:3px; left:3px; transition:transform .2s ease; box-shadow: 0 2px 6px rgba(0,0,0,.5)}
+    .toggle input:checked::after{transform:translateX(18px)}
+    .tabs{display:flex; gap:8px; margin-bottom:8px}
+    .tab{background:#0f172a; border:1px solid #243047; color:var(--text); padding:10px 12px; border-radius:12px; cursor:pointer}
+    .tab[aria-selected="true"]{background:linear-gradient(to bottom right, #111d39, #0d162c); border-color:#365086}
+    .note{font-size:12px; color:var(--muted); margin-top:16px; border-top:1px dashed #243047; padding-top:8px}
+    .credits{margin-top:24px; font-size:11px; color:#8ba0bd}
+    .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <div class="title">수면 시간 계산기</div>
+        <div class="subtitle">90분 수면 주기와 잠드는 데 걸리는 시간을 고려해, <b>언제 자고 언제 일어나면 개운한지</b>를 계산합니다.</div>
+      </div>
+      <div class="pill" aria-live="polite" id="clockPill">현재 시간 로딩 중…</div>
+    </header>
+
+    <section class="grid">
+      <!-- Left: Inputs -->
+      <section class="panel card" aria-labelledby="calcTitle">
+        <h2 id="calcTitle">계산 옵션</h2>
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" aria-selected="true" id="tab-wake" aria-controls="panel-wake">기상 시간 → 취침 시각</button>
+          <button class="tab" role="tab" aria-selected="false" id="tab-bed" aria-controls="panel-bed">취침 시각 → 기상 시각</button>
+        </div>
+
+        <!-- Panel: from Wake time -->
+        <div id="panel-wake" role="tabpanel" aria-labelledby="tab-wake">
+          <div class="row">
+            <div class="field">
+              <label for="wakeTime">기상 시간</label>
+              <input id="wakeTime" type="time" step="60" />
+              <div class="hint">예: 06:30</div>
+            </div>
+            <div class="field">
+              <label for="latency1">잠드는 시간(분)</label>
+              <input id="latency1" type="number" min="0" max="60" value="15" />
+              <div class="hint">보통 10–20분. 개인차 있음.</div>
+            </div>
+          </div>
+          <div class="actions" style="margin-top:12px">
+            <button id="calcFromWake">계산하기</button>
+            <button class="secondary" id="wakeExamples">예시 넣기</button>
+          </div>
+          <div class="result" id="resultFromWake" aria-live="polite"></div>
+        </div>
+
+        <!-- Panel: from Bed time -->
+        <div id="panel-bed" role="tabpanel" aria-labelledby="tab-bed" hidden>
+          <div class="row">
+            <div class="field">
+              <label for="bedTime">취침 시각</label>
+              <input id="bedTime" type="time" step="60" />
+              <div class="hint">예: 23:05</div>
+            </div>
+            <div class="field">
+              <label for="latency2">잠드는 시간(분)</label>
+              <input id="latency2" type="number" min="0" max="60" value="15" />
+              <div class="hint">보통 10–20분. 개인차 있음.</div>
+            </div>
+          </div>
+          <div class="actions" style="margin-top:12px">
+            <button id="calcFromBed">계산하기</button>
+            <button class="secondary" id="bedNow">지금부터 계산</button>
+          </div>
+          <div class="result" id="resultFromBed" aria-live="polite"></div>
+        </div>
+
+        <div class="note">* 1 수면 주기는 약 90분입니다. 4–6사이클(6–9시간)이 일반적으로 개운합니다. 개인차를 고려하세요.</div>
+      </section>
+
+      <!-- Right: Tips & Info -->
+      <aside class="panel card">
+        <h2>수면 팁</h2>
+        <ul style="margin:8px 0 0 18px; line-height:1.6">
+          <li>취침·기상 시간을 규칙적으로 유지하세요.</li>
+          <li>자기 전 강한 빛(특히 파란빛)을 줄이세요.</li>
+          <li>카페인은 취침 6–8시간 전부터 피하세요.</li>
+          <li>침실은 어둡고 조용하고 서늘하게 유지하세요.</li>
+        </ul>
+        <div class="tip">깊은 수면(N3)과 REM 수면이 충분히 반복되도록 <b>사이클을 맞춰</b> 깨면 덜 몽롱합니다.</div>
+        <div class="credits">ⓘ 교육용 도구. 의학적 조언이 아닙니다. 개인차가 크므로 본인의 컨디션을 우선하세요.<br>인동고등학교 홍대호 제작</div>
+      </aside>
+    </section>
+
+    <section class="panel card" style="margin-top:16px">
+      <h2>결과 요약</h2>
+      <div id="summary" class="pill">아직 계산 전입니다.</div>
+    </section>
+
+  </main>
+
+  <template id="timeCardTpl">
+    <div class="timecard">
+      <div class="badge"></div>
+      <div class="time"></div>
+      <div class="meta"></div>
+      <button class="copy" title="복사하기">복사</button>
+    </div>
+  </template>
+
+  <script>
+    // Utilities
+    const pad = n => String(n).padStart(2,'0');
+    const toMinutes = (hhmm) => { if(!hhmm) return null; const [h,m] = hhmm.split(':').map(Number); return h*60+m; };
+    const fromMinutes = (mins) => { mins = (mins%(24*60)+24*60)%(24*60); const h = Math.floor(mins/60), m = mins%60; return pad(h)+":"+pad(m); };
+    const fmtHours = (minsTotal)=> (minsTotal/60).toFixed(1).replace(/\.0$/,"") + "시간";
+
+    function buildList(container, items, kind){
+      container.innerHTML = '';
+      const list = document.createElement('div');
+      list.className = 'list';
+      items.forEach(it=>{
+        const card = document.getElementById('timeCardTpl').content.cloneNode(true);
+        card.querySelector('.badge').textContent = `${it.cycles} 사이클`;
+        card.querySelector('.time').textContent = it.time;
+        card.querySelector('.meta').textContent = `${kind==='bed' ? '취침 시각' : '기상 시각'} • 총 수면 ${fmtHours(it.total)}`;
+        const btn = card.querySelector('.copy');
+        btn.addEventListener('click', async ()=>{
+          try{ await navigator.clipboard.writeText(it.time); btn.textContent='복사됨'; setTimeout(()=>btn.textContent='복사', 1200);}catch(e){ alert('복사 실패: '+e); }
+        });
+        list.appendChild(card);
+      });
+      container.appendChild(list);
+    }
+
+    function calcFromWake(wakeHHMM, latency, cyclesArr=[6,5,4]){
+      const wake = toMinutes(wakeHHMM); if(wake==null) return [];
+      const results = cyclesArr.map(c=>{
+        const total = c*90; // minutes asleep
+        const bed = wake - latency - total; // when to go to bed
+        return { cycles:c, time: fromMinutes(bed), total };
+      });
+      return results;
+    }
+
+    function calcFromBed(bedHHMM, latency, cyclesArr=[4,5,6]){
+      const bed = toMinutes(bedHHMM); if(bed==null) return [];
+      const results = cyclesArr.map(c=>{
+        const total = c*90; // minutes asleep
+        const wake = bed + latency + total; // when to wake
+        return { cycles:c, time: fromMinutes(wake), total };
+      });
+      return results;
+    }
+
+    // Tabs
+    const tabWake = document.getElementById('tab-wake');
+    const tabBed = document.getElementById('tab-bed');
+    const panelWake = document.getElementById('panel-wake');
+    const panelBed = document.getElementById('panel-bed');
+    tabWake.addEventListener('click',()=>{
+      tabWake.setAttribute('aria-selected','true');
+      tabBed.setAttribute('aria-selected','false');
+      panelWake.hidden=false; panelBed.hidden=true;
+    });
+    tabBed.addEventListener('click',()=>{
+      tabWake.setAttribute('aria-selected','false');
+      tabBed.setAttribute('aria-selected','true');
+      panelWake.hidden=true; panelBed.hidden=false;
+    });
+
+    // Live clock
+    const clockPill = document.getElementById('clockPill');
+    const fmtClock = d=> `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    function tick(){ const d = new Date(); clockPill.textContent = '현재 '+fmtClock(d); }
+    tick(); setInterval(tick, 1000*30);
+
+    // Wire actions
+    const resWake = document.getElementById('resultFromWake');
+    const resBed = document.getElementById('resultFromBed');
+    const summary = document.getElementById('summary');
+
+    document.getElementById('calcFromWake').addEventListener('click',()=>{
+      const wake = document.getElementById('wakeTime').value;
+      const latency = parseInt(document.getElementById('latency1').value||'0',10);
+      const items = calcFromWake(wake, latency);
+      if(items.length===0){ resWake.textContent='기상 시간을 입력하세요.'; return; }
+      buildList(resWake, items, 'bed');
+      summary.textContent = `기상 ${wake} 기준, 권장 취침 시각: ${items.map(i=>i.time).join(', ')} (수면 ${items.map(i=>i.cycles).join('/') } 사이클)`;
+    });
+
+    document.getElementById('wakeExamples').addEventListener('click',()=>{
+      document.getElementById('wakeTime').value = '06:30';
+      document.getElementById('latency1').value = 15;
+    });
+
+    document.getElementById('calcFromBed').addEventListener('click',()=>{
+      const bed = document.getElementById('bedTime').value;
+      const latency = parseInt(document.getElementById('latency2').value||'0',10);
+      const items = calcFromBed(bed, latency);
+      if(items.length===0){ resBed.textContent='취침 시각을 입력하세요.'; return; }
+      buildList(resBed, items, 'wake');
+      summary.textContent = `취침 ${bed} 기준, 권장 기상 시각: ${items.map(i=>i.time).join(', ')} (수면 ${items.map(i=>i.cycles).join('/') } 사이클)`;
+    });
+
+    document.getElementById('bedNow').addEventListener('click',()=>{
+      const now = new Date();
+      const hhmm = pad(now.getHours())+":"+pad(now.getMinutes());
+      document.getElementById('bedTime').value = hhmm;
+      document.getElementById('calcFromBed').click();
+    });
+  </script>
+</body>
+</html>
